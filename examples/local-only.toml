@@ -1,0 +1,70 @@
+# Local Mail Agent — no secret values in this file.
+[app]
+timezone = "UTC"
+data_dir = "" # empty: private OS-specific application data directory
+port = 8766
+
+[source]
+kind = "apple_mail" # apple_mail (macOS), or eml (macOS/Linux)
+window_hours = 24
+mark_read = false
+max_per_run = 200
+
+[processing]
+model = "qwen3.5:9b"
+ollama_url = "http://127.0.0.1:11434"
+allowed_models = ["qwen3.5:9b", "gemma4:e4b", "gemma4:12b-mlx", "nemotron-3-nano:4b"]
+
+[schedule]
+collection_seconds = 900
+hours = [9, 21]
+
+[summary]
+provider = "local" # local: arrange classified summaries; codex: optional cloud refinement
+codex_path = "codex"
+
+[privacy]
+allow_cloud_summary = false
+allow_external_delivery = false
+show_own_addresses = false
+
+[[delivery]]
+id = "archive"
+type = "archive"
+enabled = true
+path = "archive" # relative to the private data directory, or an explicit local folder
+
+[[delivery]]
+id = "email"
+type = "email"
+enabled = false
+host = "smtp.example.test"
+port = 587
+tls = "starttls" # starttls or ssl; cleartext SMTP is not supported
+username = "owner@example.test"
+password_env = "LMA_SMTP_PASSWORD"
+sender = "owner@example.test"
+recipients = ["owner@example.test"]
+
+[[delivery]]
+id = "telegram-bot"
+type = "telegram_bot"
+enabled = false
+token_env = "LMA_TELEGRAM_BOT_TOKEN"
+chat_id_env = "LMA_TELEGRAM_CHAT_ID"
+
+[[delivery]]
+id = "telegram-saved"
+type = "telegram_saved"
+enabled = false
+api_id_env = "LMA_TELEGRAM_API_ID"
+api_hash_env = "LMA_TELEGRAM_API_HASH"
+session = "saved-messages"
+
+[[delivery]]
+id = "ssh"
+type = "ssh"
+enabled = false
+host = "mail-relay.example.test" # an existing SSH alias also works
+command = ["local-mail-agent", "--config", "/etc/local-mail-agent/relay.toml", "relay", "--channel", "telegram-bot"]
+timeout = 90

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-mail-agent"
+version = "0.1.0"
+description = "Local-first Apple Mail triage, private digests and interchangeable delivery channels"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "Local Mail Agent contributors"}]
+keywords = ["email", "apple-mail", "ollama", "privacy", "telegram"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Operating System :: MacOS :: MacOS X",
+  "Topic :: Communications :: Email",
+]
+dependencies = []
+
+[project.optional-dependencies]
+telegram = ["Telethon>=1.36,<2"]
+keychain = ["keyring>=25,<27"]
+dev = ["build>=1.2,<2"]
+
+[project.scripts]
+local-mail-agent = "local_mail_agent.cli:main"
+lma = "local_mail_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+local_mail_agent = ["assets/*.html", "assets/*.toml", "native/*.m"]
