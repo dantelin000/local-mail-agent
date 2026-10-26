@@ -108,6 +108,7 @@ def import_mail(path):
         items.append({'identity':'eml:'+c.canonical_key(raw),'account':'eml','received':parsed['received'],
             'raw':raw,'read_unchanged':True,'flag_unchanged':True})
     added,duplicates,outside=c.enqueue_messages(items)
+    c.purge_raw()
     print(json.dumps({'queued':added,'duplicates':duplicates,'outside_window':outside}))
     return 0
 

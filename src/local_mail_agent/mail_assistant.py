@@ -89,7 +89,7 @@ EMAIL = re.compile(r'(?i)[a-z0-9.!#$%&\x27*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}
 LONG_SECRET = re.compile(r'(?<!\w)[A-Za-z0-9_+/=-]{24,}(?!\w)')
 DIGITS = re.compile(r'(?<!\d)\d{4,}(?!\d)')
 SENSITIVE = re.compile(r'(?i)验证码|校验码|动态码|重置|密码|登录确认|身份验证|一次性|verification\s*code|security\s*code|one.time|reset|pass(?:word|code)|sign.in|log.in|authenticate|\botp\b')
-PRIVATE_CONTEXT = re.compile(r'(?i)护照|身份证|银行账号|银行卡|病历|诊断|医疗|税号|\bpassport\b|\bssn\b|\btfn\b|\biban\b|bank\s*account|medical|diagnosis')
+PRIVATE_CONTEXT = re.compile(r'(?i)护照|身份证|银行账号|银行卡|病历|诊断|医疗|诊疗|确诊|患有|疾病|病情|健康|治疗|处方|用药|注射|糖尿病|胰岛素|癌|肿瘤|阳性|感染|税号|体检|化验|检测结果|住院|心理|怀孕|工资|薪资|实发|贷款|逾期|欠款|诉讼|开庭|律师|地址|\bpassport\b|\bssn\b|\btfn\b|\biban\b|bank\s*account|medical|diagnos\w*|(?<![A-Za-z0-9_])hiv(?![A-Za-z0-9_])|\bdiabet\w*|\binsulin\b|\bcancer\w*|\btumou?rs?\b|\bpositive\b|\btreatment\b|\btherap\w*|\bhealth\b|lab(?:oratory)?[\s-]*results?|test[\s-]*results?|hospital\w*|mental\s*health|psycholog\w*|psychiatr\w*|pregnan\w*|\bsalar(?:y|ies)\b|pay[\s-]*slips?|\bwages?\b|net\s*pay|\bloans?\b|\boverdue\b|\bdebts?\b|lawsuits?|litigation|court\s*(?:hearing|notice)|lawyers?|attorneys?|\baddress(?:es)?\b|identity\s*(?:card|number)|national\s*id')
 INJECTION = re.compile(r'(?i)ignore.{0,30}(?:instruction|rule|previous)|system\s*prompt|忽略.{0,20}(?:指令|规则)|执行.{0,15}(?:命令|脚本)|forward.{0,40}(?:all|other).{0,20}(?:mail|message)|转发.{0,15}(?:所有|其他).{0,10}邮件')
 PHONE = re.compile(r'(?<!\w)(?:\+\d[\d ()-]{7,}\d|0[23478][\d -]{7,}\d)(?!\w)')
 
@@ -271,7 +271,7 @@ def start_job(messages, model, source):
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass
-    def send(self, status, content, content_type='application/json; charset=utf-8',policy=None):
+    def send(self, status, content, content_type='application/json; charset=utf-8'):
         if isinstance(content, dict): content = json.dumps(content, ensure_ascii=False)
         data = content.encode('utf-8')
         self.send_response(status)
@@ -281,7 +281,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'DENY')
         self.send_header('Referrer-Policy', 'no-referrer')
-        self.send_header('Content-Security-Policy', policy or "default-src 'none'; script-src 'nonce-" + self.server.csrf + "'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'nonce-" + self.server.csrf + "'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
         self.end_headers()
         self.wfile.write(data)
     def valid_host(self):
@@ -311,9 +311,6 @@ class Handler(BaseHTTPRequestHandler):
             name=urllib.parse.unquote(name)
             target=PRIVATE/'reports'/name
             if not target.is_file() or target.is_symlink():return self.send(404,{'error':'not_found'})
-            if target.suffix=='.html':
-                from . import reading_layout
-                return self.send(200,target.read_text(),'text/html; charset=utf-8',policy=reading_layout.content_policy())
             return self.send(200,target.read_text(),'text/html; charset=utf-8' if target.suffix=='.html' else 'application/json; charset=utf-8' if target.suffix=='.json' else 'text/plain; charset=utf-8')
         if self.path == '/api/health': return self.send(200, {'status': 'ok', 'version': '0.1.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex'})
         return self.send(404, {'error': 'not_found'})

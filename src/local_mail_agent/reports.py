@@ -122,11 +122,37 @@ def markdown(value):
     return result
 
 def render(value):
-    validate(value)
-    from . import reading_layout
-    coverage={k:v for k,v in value['coverage'].items() if k in reading_layout.COUNTS and v is not None}
-    return reading_layout.render(value['slot'],value['messages'],coverage,value['markdown'],
-        value['own_addresses'],timezone=value['timezone'])
+    validate(value);e=html.escape
+    css=''' :root{color-scheme:light dark}*{box-sizing:border-box}body{font:17px/1.75 system-ui,sans-serif;background:#f3f6fc;color:#24334c;margin:0}main{max-width:1040px;margin:auto;padding:28px 20px 60px}header{background:linear-gradient(120deg,#253b75,#6254b5);color:#fff;padding:32px;border-radius:24px;margin-bottom:24px}h1{margin:0;font-size:30px}.meta{opacity:.85;font-size:14px}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.stat{background:#fff;padding:16px 22px;border-radius:14px;flex:1;min-width:140px;border-top:4px solid #6366f1}.stat:nth-child(2){border-color:#059669}.stat:nth-child(3){border-color:#ea8b23}.stat strong{display:block;font-size:28px}details{background:#fff;border-radius:16px;padding:18px;margin:18px 0;border-left:5px solid #6366f1}details:nth-of-type(3n+2){border-color:#059669}details:nth-of-type(3n){border-color:#ea8b23}summary{cursor:pointer;font-weight:700;font-size:20px}.card{padding:18px 0;border-top:1px solid #dbe3f2}.card:first-child{margin-top:16px}h3{font-size:18px;margin:0 0 8px}.badge{display:inline-block;padding:2px 9px;border-radius:20px;background:#eef2ff;color:#4338ca;font-size:13px;margin:4px 4px 8px 0}.high{background:#fee2e2;color:#b91c1c}.address,.id{font-size:13px;color:#64748b;overflow-wrap:anywhere}p{white-space:pre-wrap;overflow-wrap:anywhere}footer{font-size:14px;color:#64748b;margin-top:26px}@media(prefers-color-scheme:dark){body{background:#111827;color:#e2e8f0}.stat,details{background:#1e293b}.card{border-color:#334155}.badge{background:#312e81;color:#e0e7ff}.high{background:#7f1d1d;color:#fecaca}}@media print{header{background:#fff;color:#111}details{break-inside:avoid}body{background:#fff}}'''
+    policy="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    parts=['<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
+        '<meta http-equiv="Content-Security-Policy" content="'+policy+'"><title>邮件简报</title><style>'+css+'</style></head><body><main>',
+        '<header><div>LOCAL MAIL AGENT</div><h1>📬 每日邮件简报</h1><div class="meta">'+e(value['slot'][:16].replace('T',' '))+' · '+e(value['timezone'])+'</div></header>',
+        '<div class="stats">']
+    for label,number in [('可读摘要',len(value['messages'])),('待回复',sum(bool(x['needs_reply']) for x in value['messages'])),('仅本机保留',value['coverage'].get('local_only_messages',0))]:
+        parts+=['<div class="stat">'+label+'<strong>'+e(str(number))+'</strong></div>']
+    parts+=['</div>']
+    groups={}
+    for item in value['messages']:
+        if item['needs_reply']:group='💬 待回复'
+        elif item['priority']=='高':group='🔴 优先处理'
+        else:
+            text=item['subject']+' '+item['summary']
+            group=next((label for pattern,label in [(r'游戏|game|steam','🎮 游戏动态'),(r'房产|地产|property','🏠 房产'),(r'投资|股票|基金|invest|stock','📈 投资资讯'),(r'技术|开发|软件|code|release','💻 技术动态'),(r'购物|促销|折扣|sale|优惠','🛍️ 购物与优惠')] if re.search(pattern,text,re.I)),ICONS.get(item['category'],'📌')+' '+item['category'])
+        groups.setdefault(group,[]).append(item)
+    for group,items in sorted(groups.items(),key=lambda kv:(kv[0] not in {'💬 待回复','🔴 优先处理'},kv[0])):
+        opened=' open' if group in {'💬 待回复','🔴 优先处理'} else ''
+        parts+=['<details'+opened+'><summary>'+e(group)+' · '+str(len(items))+'封</summary>']
+        for item in items:
+            parts+=['<article class="card"><h3>'+e(item['subject'])+'</h3><span class="badge'+(' high' if item['priority']=='高' else '')+'">'+e(item['priority'])+'优先级</span><span class="badge">'+e(item['category'])+'</span><p>'+e(item['summary'])+'</p>']
+            if item['deadline']:parts+=['<p>期限：'+e(item['deadline'])+'</p>']
+            if value['own_addresses'].get(item['id']):parts+=['<p class="address">本人收件邮箱：'+e('、'.join(value['own_addresses'][item['id']]))+'</p>']
+            parts+=['<div class="id">'+e(item['id'])+'</div></article>']
+        parts+=['</details>']
+    # Preserve the cloud/editorial report as well as per-message detail; escape all text.
+    parts+=['<details><summary>📝 完整编排报告与覆盖说明</summary><p>'+e(value['markdown'])+'</p></details>',
+        '<footer>原始邮件与敏感内容保留在本机。报告只包含通过脱敏检查的摘要；分类可能有误，请按需核对原邮件。此页面无外部脚本、图片或网络请求。</footer></main></body></html>']
+    return ''.join(parts).encode()
 
 def save(value,directory=None):
     directory=Path(directory or m.PRIVATE/'reports');directory.mkdir(mode=0o700,parents=True,exist_ok=True)

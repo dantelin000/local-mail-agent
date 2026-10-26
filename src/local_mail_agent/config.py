@@ -16,7 +16,7 @@ DEFAULTS = {
                    'allowed_models': ['qwen3.5:9b', 'gemma4:e4b', 'gemma4:12b-mlx', 'nemotron-3-nano:4b']},
     'schedule': {'collection_seconds': 900, 'hours': [9, 21]},
     'summary': {'provider': 'local', 'codex_path': 'codex'},
-    'privacy': {'allow_cloud_summary': False, 'allow_external_delivery': False, 'show_own_addresses': False},
+    'privacy': {'allow_cloud_summary': False, 'allow_external_delivery': False, 'show_own_addresses': False, 'raw_retention_hours': 72},
     'delivery': [{'id': 'archive', 'type': 'archive', 'enabled': True, 'path': 'archive'}],
 }
 DRIVER_KEYS = {
@@ -58,7 +58,8 @@ def validate(cfg):
                         ('privacy','allow_external_delivery'),('privacy','show_own_addresses')]:
         if type(cfg[section][key]) is not bool:raise ValueError(section+'.'+key+' must be boolean')
     for section,key,low,high in [('app','port',1024,65535),('source','window_hours',1,168),
-                                ('source','max_per_run',1,200),('schedule','collection_seconds',30,86400)]:
+                                ('source','max_per_run',1,200),('schedule','collection_seconds',30,86400),
+                                ('privacy','raw_retention_hours',1,8760)]:
         v=cfg[section][key]
         if type(v) is not int or not low<=v<=high:raise ValueError(section+'.'+key+' out of range')
     hours=cfg['schedule']['hours']

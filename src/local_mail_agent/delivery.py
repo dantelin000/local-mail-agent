@@ -1,6 +1,7 @@
 """Interchangeable sinks with immutable packets and durable duplicate suppression."""
 import asyncio
 from contextlib import contextmanager
+import datetime as dt
 import hashlib
 import io
 import json
@@ -26,6 +27,20 @@ class Retryable(DeliveryError):
     state='retryable'
 class Uncertain(DeliveryError):
     state='uncertain'
+class Cancelled(DeliveryError):
+    state='cancelled'
+
+def bot_fingerprints(token,chat):
+    return {key:hashlib.sha256(value.encode()).hexdigest() if value else None
+        for key,value in (('token',token),('chat_id',chat))}
+
+def channel_snapshot(channel):
+    value=dict(channel)
+    if value['type']=='telegram_bot':
+        token=secrets.read(value.get('token_env','LMA_TELEGRAM_BOT_TOKEN'),required=False)
+        chat=secrets.read(value.get('chat_id_env','LMA_TELEGRAM_CHAT_ID'),required=False)
+        value['credential_fingerprints']=bot_fingerprints(token,chat)
+    return json.dumps(value,sort_keys=True)
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,*args,**kwargs):return None
@@ -48,6 +63,8 @@ def bot_api(token,method,data,kind='application/json'):
 def send_bot(value,channel):
     token=secrets.read(channel.get('token_env','LMA_TELEGRAM_BOT_TOKEN'))
     chat=secrets.read(channel.get('chat_id_env','LMA_TELEGRAM_CHAT_ID'))
+    if 'credential_fingerprints' in channel and channel['credential_fingerprints']!=bot_fingerprints(token,chat):
+        raise Cancelled('channel_credentials_changed')
     if not re.fullmatch(r'\d{5,20}:[A-Za-z0-9_-]{20,100}',token) or not re.fullmatch(r'[1-9]\d{3,19}',chat):
         raise DeliveryError('invalid_telegram_credentials')
     try:target=bot_api(token,'getChat',json.dumps({'chat_id':chat}).encode())
@@ -180,31 +197,60 @@ DRIVERS={'archive':send_archive,'email':send_email,'telegram_bot':send_bot,'tele
 def ledger():
     m.setup();conn=sqlite3.connect(m.PRIVATE/'delivery.sqlite3',timeout=20);conn.row_factory=sqlite3.Row
     try:
-        conn.execute('CREATE TABLE IF NOT EXISTS deliveries(report_id TEXT,channel_id TEXT,digest TEXT,packet TEXT,channel TEXT,state TEXT,attempts INTEGER DEFAULT 0,next_attempt REAL DEFAULT 0,reason TEXT DEFAULT \'\',message_id TEXT,updated TEXT,PRIMARY KEY(report_id,channel_id))')
+        conn.execute('BEGIN IMMEDIATE')
+        schema='CREATE TABLE IF NOT EXISTS deliveries(id INTEGER PRIMARY KEY,report_id TEXT,channel_id TEXT,digest TEXT,packet TEXT,channel TEXT,state TEXT,attempts INTEGER DEFAULT 0,next_attempt REAL DEFAULT 0,reason TEXT DEFAULT \'\',message_id TEXT,updated TEXT)'
+        conn.execute(schema)
+        if 'id' not in {r[1] for r in conn.execute('PRAGMA table_info(deliveries)')}:
+            conn.execute('ALTER TABLE deliveries RENAME TO deliveries_old')
+            conn.execute(schema)
+            conn.execute('INSERT INTO deliveries(report_id,channel_id,digest,packet,channel,state,attempts,next_attempt,reason,message_id,updated) SELECT * FROM deliveries_old')
+            conn.execute('DROP TABLE deliveries_old')
+        conn.execute('CREATE INDEX IF NOT EXISTS deliveries_target ON deliveries(report_id,channel_id)')
+        conn.execute('CREATE TABLE IF NOT EXISTS channel_baseline(channel_id TEXT PRIMARY KEY,first_seen TEXT)')
         conn.commit()
         with conn:yield conn
     finally:conn.close()
+
+def first_seen(conn,channel,slot=None):
+    if channel['type']=='archive':return None
+    current=dt.datetime.fromisoformat(m.now()).astimezone(m.TZ)
+    candidates=(dt.datetime.combine(current.date()-dt.timedelta(days=offset),dt.time(hour),tzinfo=m.TZ)
+        for offset in (0,1) for hour in config.get()['schedule']['hours'])
+    baseline=max(value for value in candidates if value<=current)
+    # Direct generation anchors its first report; historical scans register without a slot.
+    if slot:baseline=min(baseline,dt.datetime.fromisoformat(slot))
+    conn.execute('INSERT OR IGNORE INTO channel_baseline VALUES (?,?)',(channel['id'],baseline.isoformat()))
+    return conn.execute('SELECT first_seen FROM channel_baseline WHERE channel_id=?',(channel['id'],)).fetchone()[0]
 
 def enqueue(value,channels=None):
     digest=reports.fingerprint(value)
     for channel in (channels if channels is not None else config.get()['delivery']):
         if not channel.get('enabled'):continue
         with ledger() as conn:
-            row=conn.execute('SELECT digest,channel FROM deliveries WHERE report_id=? AND channel_id=?',(value['report_id'],channel['id'])).fetchone()
-            frozen=json.dumps(channel,sort_keys=True)
-            if row:
-                if row['digest']!=digest or row['channel']!=frozen:raise ValueError('delivery_packet_or_destination_changed')
-                continue
+            conn.execute('BEGIN IMMEDIATE')
+            baseline=first_seen(conn,channel,value['slot'])
+            if baseline and dt.datetime.fromisoformat(value['slot'])<dt.datetime.fromisoformat(baseline):continue
+            rows=conn.execute("SELECT id,digest,channel,state FROM deliveries WHERE report_id=? AND channel_id=? AND state!='superseded'",(value['report_id'],channel['id'])).fetchall()
+            if any(row['state'] not in {'pending','retryable'} for row in rows):continue
+            frozen=channel_snapshot(channel)
+            if rows:
+                if channel['type']=='telegram_bot' and any(json.loads(row['channel']).get('credential_fingerprints')!=json.loads(frozen)['credential_fingerprints'] for row in rows):
+                    for row in rows:
+                        conn.execute("UPDATE deliveries SET state='cancelled',reason='channel_credentials_changed',updated=? WHERE id=?",(m.now(),row['id']))
+                    continue
+                if any(row['digest']==digest and row['channel']==frozen for row in rows):continue
+                for row in rows:
+                    conn.execute("UPDATE deliveries SET state='superseded',updated=? WHERE id=? AND state IN ('pending','retryable')",(m.now(),row['id']))
             conn.execute('INSERT INTO deliveries(report_id,channel_id,digest,packet,channel,state,updated) VALUES (?,?,?,?,?,?,?)',
                 (value['report_id'],channel['id'],digest,json.dumps(value,ensure_ascii=False),frozen,'pending',m.now()))
 
 def recover():
     # Only invoke once after acquiring the worker lock, never from a second concurrent process.
     with ledger() as conn:
-        for row in conn.execute("SELECT report_id,channel_id,channel FROM deliveries WHERE state='sending'").fetchall():
+        for row in conn.execute("SELECT id,channel FROM deliveries WHERE state='sending'").fetchall():
             kind=json.loads(row['channel'])['type']
-            conn.execute('UPDATE deliveries SET state=?,reason=? WHERE report_id=? AND channel_id=?',
-                ('retryable' if kind in {'archive','ssh'} else 'uncertain','interrupted_delivery',row['report_id'],row['channel_id']))
+            conn.execute('UPDATE deliveries SET state=?,reason=? WHERE id=?',
+                ('retryable' if kind in {'archive','ssh'} else 'uncertain','interrupted_delivery',row['id']))
 
 def process_one(report=None,channel_id=None):
     with ledger() as conn:
@@ -213,22 +259,28 @@ def process_one(report=None,channel_id=None):
         if report:query+=' AND report_id=?';args.append(report)
         if channel_id:query+=' AND channel_id=?';args.append(channel_id)
         rows=conn.execute(query+' ORDER BY updated',args).fetchall()
-        row=next((r for r in rows if config.get()['privacy']['allow_external_delivery'] or json.loads(r['channel'])['type']=='archive'),None)
+        current={c['id']:channel_snapshot(c) for c in config.get()['delivery'] if c.get('enabled') is True}
+        row=next((r for r in rows if current.get(r['channel_id'])!=r['channel'] or
+            config.get()['privacy']['allow_external_delivery'] or json.loads(r['channel'])['type']=='archive'),None)
         if not row:return None
         row=dict(row);channel=json.loads(row['channel'])
-        conn.execute("UPDATE deliveries SET state='sending',attempts=attempts+1,updated=? WHERE report_id=? AND channel_id=?",
-            (m.now(),row['report_id'],row['channel_id']))
+        conn.execute("UPDATE deliveries SET state='sending',attempts=attempts+1,updated=? WHERE id=?",
+            (m.now(),row['id']))
     try:
-        value=json.loads(row['packet']);reports.validate(value)
-        if channel['type']!='archive' and value['own_addresses'] and not config.get()['privacy']['show_own_addresses']:
-            raise DeliveryError('own_address_export_not_enabled')
-        receipt=DRIVERS[channel['type']](value,channel);state='sent';reason='';mid=receipt.get('message_id')
+        current=next((c for c in config.get()['delivery'] if c['id']==row['channel_id']),None)
+        if not current or current.get('enabled') is not True or channel_snapshot(current)!=row['channel']:
+            state='cancelled';reason='channel_disabled_or_changed';mid=None
+        else:
+            value=json.loads(row['packet']);reports.validate(value)
+            if channel['type']!='archive' and value['own_addresses'] and not config.get()['privacy']['show_own_addresses']:
+                raise DeliveryError('own_address_export_not_enabled')
+            receipt=DRIVERS[channel['type']](value,channel);state='sent';reason='';mid=receipt.get('message_id')
     except DeliveryError as exc:state=exc.state;reason=str(exc);mid=None
     except Exception:state='rejected';reason='delivery_configuration_or_packet_invalid';mid=None
     if state=='retryable' and row['attempts']+1>=8:state='rejected';reason='retry_limit'
     with ledger() as conn:
-        conn.execute('UPDATE deliveries SET state=?,reason=?,message_id=?,updated=?,next_attempt=? WHERE report_id=? AND channel_id=?',
-            (state,reason,mid,m.now(),time.time()+min(3600,60*2**min(row['attempts'],6)),row['report_id'],row['channel_id']))
+        conn.execute("UPDATE deliveries SET state=?,reason=?,message_id=?,updated=?,next_attempt=? WHERE id=? AND state='sending'",
+            (state,reason,mid,m.now(),time.time()+min(3600,60*2**min(row['attempts'],6)),row['id']))
     return {'state':state,'reason':reason,'message_id':mid,'report_id':row['report_id'],'channel_id':row['channel_id']}
 
 def status():
@@ -237,10 +289,20 @@ def status():
 
 def stage_completed():
     from . import collector as c
+    channels=[channel for channel in config.get()['delivery'] if channel.get('enabled')]
+    with ledger() as conn:
+        for channel in channels:first_seen(conn,channel)
     with c.store() as conn:rows=[dict(r) for r in conn.execute("SELECT report FROM runs WHERE state='completed'")]
     for row in rows:
-        path=m.PRIVATE/'reports'/Path(row['report']).with_suffix('.json')
-        if path.exists() and not path.is_symlink():enqueue(json.loads(path.read_text()))
+        try:
+            path=m.PRIVATE/'reports'/Path(row['report']).with_suffix('.json')
+            if not path.exists() or path.is_symlink():continue
+            value=json.loads(path.read_text())
+        except Exception:
+            c.put_state('delivery',{'state':'queue_error','reason':'report_unavailable','updated':m.now()});continue
+        for channel in channels:
+            try:enqueue(value,[channel])
+            except Exception:c.put_state('delivery',{'state':'queue_error','reason':'enqueue_failed','channel_id':channel['id'],'updated':m.now()})
 
 def relay(value,channel_id):
     reports.validate(value)
@@ -250,7 +312,7 @@ def relay(value,channel_id):
     enqueue(value,channels)
     result=process_one(value['report_id'],channel_id)
     if result:return result
-    with ledger() as conn:row=conn.execute('SELECT state,reason,message_id FROM deliveries WHERE report_id=? AND channel_id=?',(value['report_id'],channel_id)).fetchone()
+    with ledger() as conn:row=conn.execute("SELECT state,reason,message_id FROM deliveries WHERE report_id=? AND channel_id=? AND state!='superseded' ORDER BY id DESC LIMIT 1",(value['report_id'],channel_id)).fetchone()
     if row:
         result={**dict(row),'duplicate':True}
         if result['state']=='sending':result.update(state='uncertain',reason='active_or_interrupted_remote_delivery')

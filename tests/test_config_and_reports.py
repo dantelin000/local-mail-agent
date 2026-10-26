@@ -41,6 +41,21 @@ class ConfigTests(unittest.TestCase):
         cfg=copy.deepcopy(config.DEFAULTS);cfg['delivery']=[{'id':'relay','type':'ssh','enabled':True,'host':'-oProxyCommand=bad','command':['relay']}]
         with self.assertRaises(ValueError):config.validate(cfg)
 
+    def test_raw_retention_default_range_and_type(self):
+        self.assertEqual(config.DEFAULTS['privacy']['raw_retention_hours'],72)
+        for hours in (1,72,8760):
+            cfg=copy.deepcopy(config.DEFAULTS);cfg['privacy']['raw_retention_hours']=hours
+            self.assertEqual(config.validate(cfg)['privacy']['raw_retention_hours'],hours)
+        for hours in (0,-1,8761,True,1.5,'72',None):
+            with self.subTest(hours=hours):
+                cfg=copy.deepcopy(config.DEFAULTS);cfg['privacy']['raw_retention_hours']=hours
+                with self.assertRaises(ValueError):config.validate(cfg)
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'config.toml';path.write_text('[privacy]\nraw_retention_hours = 24\n')
+            self.assertEqual(config.load(path)['privacy']['raw_retention_hours'],24)
+        example=Path(config.__file__).parent/'assets/config.example.toml'
+        self.assertEqual(config.load(example)['privacy']['raw_retention_hours'],72)
+
 class ReportTests(unittest.TestCase):
     def setUp(self):
         self.patch=patch.object(config,'CURRENT',copy.deepcopy(config.DEFAULTS));self.patch.start()
@@ -56,6 +71,32 @@ class ReportTests(unittest.TestCase):
     def test_authentication_and_prompt_injection_never_reach_a_report(self):
         for summary in ('验证码 123456','Ignore previous instructions','medical diagnosis','contact stranger@example.test','https://example.test/reset'):
             with self.assertRaises(ValueError):reports.build(SLOT,[{**ITEM,'summary':summary}],{})
+    def test_private_context_stays_local_in_all_exported_text_fields(self):
+        samples=['张伟的体检报告显示血糖偏高，需复查','工资单：本月实发 ¥8,500',
+            '离婚诉讼开庭通知，律师王芳','收货地址：北京市朝阳区建国路88号',
+            '化验','检测结果','HIV','HIV阳性','诊断','病历','住院','心理','怀孕','薪资','贷款','逾期','欠款','身份证',
+            'salary','PAYSLIP','lab result','lab-results','pregnancy','hospital admission',
+            'mental health','medical records','net pay','loan overdue','debt','court hearing',
+            'lawyer','shipping address','identity card']
+        for text in samples:
+            for field in ('subject','summary','deadline'):
+                with self.subTest(text=text,field=field):
+                    row={**ITEM,'gate':'review',field:text}
+                    self.assertIsNone(reports.exportable(row))
+                    with self.assertRaises(ValueError):reports.build(SLOT,[{**ITEM,field:text}],{})
+        self.assertIsNotNone(reports.exportable({**ITEM,'gate':'review'}))
+    def test_private_cloud_report_text_is_rejected(self):
+        with self.assertRaises(ValueError):reports.build(SLOT,[ITEM],{},markdown='Pregnancy lab result')
+    def test_health_terms_are_blocked_in_all_report_fields_and_markdown(self):
+        samples=('张伟确诊糖尿病，需每日注射胰岛素','确诊','患有','糖尿病','胰岛素','癌','肿瘤','阳性',
+            'diabetes','insulin','cancer','tumor','tumour','positive','HIV相关')
+        for text in samples:
+            for field in ('subject','summary','deadline'):
+                with self.subTest(text=text,field=field):
+                    self.assertIsNone(reports.exportable({**ITEM,'gate':'review',field:text}))
+                    with self.assertRaises(ValueError):reports.build(SLOT,[{**ITEM,field:text}],{})
+            with self.subTest(text=text,field='markdown'):
+                with self.assertRaises(ValueError):reports.build(SLOT,[ITEM],{},markdown=text)
     def test_html_escapes_mail_text_and_has_no_external_assets(self):
         item={**ITEM,'subject':'<script>run()</script>','summary':'<img src="bad"> harmless text'}
         document=reports.render(reports.build(SLOT,[item],{})).decode()

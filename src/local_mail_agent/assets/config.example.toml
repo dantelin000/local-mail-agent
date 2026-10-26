@@ -27,6 +27,8 @@ codex_path = "codex"
 allow_cloud_summary = false
 allow_external_delivery = false
 show_own_addresses = false
+raw_retention_hours = 72
+# Unfinished classification, deduplication or read receipts retain raw beyond this target.
 
 [[delivery]]
 id = "archive"

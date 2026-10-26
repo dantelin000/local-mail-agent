@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from local_mail_agent import cli,config,mail_assistant as m
+from local_mail_agent import cli,config,mail_assistant as m,secrets
 
 class CLITests(unittest.TestCase):
     def setUp(self):
@@ -13,6 +13,7 @@ class CLITests(unittest.TestCase):
         self.config=self.root/'config.toml';self.data=self.root/'data'
         self.patches=[patch.object(config,'ACTIVE',False),patch.object(config,'CURRENT',config.load(self.config)),
             patch.object(m,'PRIVATE',self.data),patch.object(m,'MODEL',m.MODEL),patch.object(m,'TZ',m.TZ),patch.object(m,'OLLAMA',m.OLLAMA)]
+        self.patches.append(patch.object(secrets,'read',return_value='synthetic-credential'))
         from local_mail_agent import collector
         self.patches += [patch.object(collector,'SETTINGS',self.data/'collector-settings.json'),patch.object(collector,'BRIDGE',self.data/'bridge')]
         for p in self.patches:p.start()
@@ -52,3 +53,20 @@ class CLITests(unittest.TestCase):
             code,out,_=self.call('import',str(path))
         self.assertEqual(code,0);self.assertEqual(json.loads(out)['queued'],1)
         with collector.store() as conn:self.assertEqual(conn.execute('SELECT raw FROM queue').fetchone()[0],raw)
+    def test_import_purges_completed_raw_and_keeps_new_unclassified_mail(self):
+        import datetime as dt
+        from email.utils import format_datetime
+        from local_mail_agent import collector as c
+        self.init();date=format_datetime(dt.datetime.now(dt.timezone.utc))
+        first=self.root/'first.eml';first.write_bytes(('Date: '+date+'\nSubject: first\n\nSynthetic first message').encode())
+        second=self.root/'second.eml';second.write_bytes(('Date: '+date+'\nSubject: second\n\nSynthetic second message').encode())
+        with patch.object(m,'local_api',side_effect=AssertionError('model')):
+            self.assertEqual(self.call('import',str(first))[0],0)
+            with c.store() as conn:
+                key=conn.execute('SELECT dedupe_key FROM queue').fetchone()[0]
+                conn.execute('INSERT INTO processed VALUES (?,?,?,?)',(key,'synthetic-result','review',m.now()))
+                conn.execute("UPDATE queue SET status='classified',created=?",((dt.datetime.now(m.TZ)-dt.timedelta(days=4)).isoformat(),))
+            self.assertEqual(self.call('import',str(second))[0],0)
+        with c.store() as conn:
+            self.assertIsNone(conn.execute('SELECT raw FROM queue WHERE dedupe_key=?',(key,)).fetchone()[0])
+            self.assertEqual(conn.execute("SELECT raw FROM queue WHERE status='pending'").fetchone()[0],second.read_bytes())
