@@ -1,5 +1,6 @@
 """Sanitized, versioned report documents shared by all delivery adapters."""
 import datetime as dt
+import copy
 import hashlib
 import html
 import json
@@ -59,15 +60,21 @@ def build(slot,items,coverage,markdown=None,accounts=None):
             addresses=(accounts or {}).get(item['id'],[])
             if any(not isinstance(a,str) or not m.EMAIL.fullmatch(a) for a in addresses):raise ValueError('invalid_own_address')
             if addresses:own[item['id']]=sorted(set(addresses))
-    value={'version':1,'report_id':report_id(slot),'slot':slot,'timezone':config.get()['app']['timezone'],
+    value={'version':2,'template':config.get()['report']['template'],
+        'report_id':report_id(slot),'slot':slot,'timezone':config.get()['app']['timezone'],
         'markdown':text,'messages':safe_items,'coverage':coverage,'own_addresses':own}
     validate(value)
     return value
 
 def validate(value):
-    if not isinstance(value,dict) or set(value)!={'version','report_id','slot','timezone','markdown','messages','coverage','own_addresses'}:
+    fields={'version','report_id','slot','timezone','markdown','messages','coverage','own_addresses'}
+    if not isinstance(value,dict) or type(value.get('version')) is not int or value['version'] not in {1,2}:
         raise ValueError('invalid_report_packet')
-    if value['version']!=1 or value['report_id']!=report_id(value['slot']):raise ValueError('invalid_report_identity')
+    if value['version']==2:fields.add('template')
+    if set(value)!=fields:
+        raise ValueError('invalid_report_packet')
+    if value['version']==2 and value['template'] not in config.REPORT_TEMPLATES:raise ValueError('invalid_report_template')
+    if value['report_id']!=report_id(value['slot']):raise ValueError('invalid_report_identity')
     ZoneInfo(value['timezone'])
     if not isinstance(value['markdown'],str) or not 0<len(value['markdown'])<=200000:raise ValueError('invalid_report_length')
     if not isinstance(value['messages'],list) or len(value['messages'])>200:raise ValueError('invalid_message_count')
@@ -83,10 +90,12 @@ def validate(value):
         elif key=='sample':
             if entry!='synthetic':raise ValueError('invalid_sample_marker')
         elif not isinstance(entry,str) or not re.fullmatch(r'[a-z_]{1,60}',entry):raise ValueError('invalid_coverage_state')
+    seen=set()
     for item in value['messages']:
         if not isinstance(item,dict) or set(item)!={'id','subject','summary','category','priority','needs_reply','deadline'}:
             raise ValueError('invalid_report_message')
-        if not isinstance(item['id'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}',item['id']):raise ValueError('invalid_message_id')
+        if not isinstance(item['id'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}',item['id']) or item['id'] in seen:raise ValueError('invalid_message_id')
+        seen.add(item['id'])
         if any(not isinstance(item[k],str) or len(item[k])>2000 for k in ('subject','summary','category','priority','deadline')):
             raise ValueError('invalid_message_field')
         if item['priority'] not in {'高','中','低'} or item['category'] not in m.CATEGORIES or type(item['needs_reply']) not in {bool,int} or item['needs_reply'] not in {0,1}:
@@ -121,7 +130,22 @@ def markdown(value):
         result+='\n\n## 本人收件邮箱\n\n'+'\n'.join('- '+key+' · '+'、'.join(addresses) for key,addresses in value['own_addresses'].items())+'\n'
     return result
 
+def with_template(value,name):
+    """Make an independent, local presentation copy; never alter a queued packet."""
+    validate(value)
+    if name not in config.REPORT_TEMPLATES:raise ValueError('invalid_report_template')
+    result=copy.deepcopy(value)
+    result.update(version=2,template=name)
+    return validate(result)
+
 def render(value):
+    validate(value)
+    # Keep pre-template queued reports on their original renderer.
+    if value['version']==1:return render_legacy(value)
+    from . import report_layouts
+    return report_layouts.render(value)
+
+def render_legacy(value):
     validate(value);e=html.escape
     css=''' :root{color-scheme:light dark}*{box-sizing:border-box}body{font:17px/1.75 system-ui,sans-serif;background:#f3f6fc;color:#24334c;margin:0}main{max-width:1040px;margin:auto;padding:28px 20px 60px}header{background:linear-gradient(120deg,#253b75,#6254b5);color:#fff;padding:32px;border-radius:24px;margin-bottom:24px}h1{margin:0;font-size:30px}.meta{opacity:.85;font-size:14px}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.stat{background:#fff;padding:16px 22px;border-radius:14px;flex:1;min-width:140px;border-top:4px solid #6366f1}.stat:nth-child(2){border-color:#059669}.stat:nth-child(3){border-color:#ea8b23}.stat strong{display:block;font-size:28px}details{background:#fff;border-radius:16px;padding:18px;margin:18px 0;border-left:5px solid #6366f1}details:nth-of-type(3n+2){border-color:#059669}details:nth-of-type(3n){border-color:#ea8b23}summary{cursor:pointer;font-weight:700;font-size:20px}.card{padding:18px 0;border-top:1px solid #dbe3f2}.card:first-child{margin-top:16px}h3{font-size:18px;margin:0 0 8px}.badge{display:inline-block;padding:2px 9px;border-radius:20px;background:#eef2ff;color:#4338ca;font-size:13px;margin:4px 4px 8px 0}.high{background:#fee2e2;color:#b91c1c}.address,.id{font-size:13px;color:#64748b;overflow-wrap:anywhere}p{white-space:pre-wrap;overflow-wrap:anywhere}footer{font-size:14px;color:#64748b;margin-top:26px}@media(prefers-color-scheme:dark){body{background:#111827;color:#e2e8f0}.stat,details{background:#1e293b}.card{border-color:#334155}.badge{background:#312e81;color:#e0e7ff}.high{background:#7f1d1d;color:#fecaca}}@media print{header{background:#fff;color:#111}details{break-inside:avoid}body{background:#fff}}'''
     policy="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'"

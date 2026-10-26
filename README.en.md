@@ -20,6 +20,10 @@ local-mail-agent demo
 
 The offline demo uses synthetic data and never opens a mailbox, invokes a model, or sends anything. The command prints a self-contained HTML path.
 
+Choose one of three report templates with `[report] template = "reading"`: colorful, expandable `reading` (default), dense `compact`, or fully expanded `print` for archiving and printing. Run `local-mail-agent demo --all-templates` or open the [included synthetic samples](examples/reports/index.html). `init --template compact` selects a default for a new configuration.
+
+Each generated packet freezes its template for every delivery channel. Changing configuration affects future reports and never automatically resends completed deliveries. Reformat an existing sanitized JSON locally with `local-mail-agent render report.json --template print --output report-print.html`; this does not read mail, invoke a model, alter the packet, enqueue or send. Legacy version-1 packets keep their original presentation; new version-2 packets require upgrading both ends of an SSH relay. See [template documentation](docs/report-templates.md).
+
 Defaults: UTC, 24-hour collection window, 15-minute collection intervals, digests at 09:00/21:00, local archives only. Marking mail read, cloud summaries, and external delivery are disabled. All are configurable. Use `--config FILE` before the command to select a configuration; see the [full example](src/local_mail_agent/assets/config.example.toml).
 
 For Apple Mail, install Xcode Command Line Tools and Ollama, prepare your chosen local model, then run `apple-mail build` and `apple-mail start`. macOS requests consent for the native App. Default dashboard: `http://127.0.0.1:8766/`. The worker must be running; sleep delays processing. No login item is installed automatically.

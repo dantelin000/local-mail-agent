@@ -23,6 +23,9 @@ hours = [9, 21]
 provider = "local" # local: arrange classified summaries; codex: optional cloud refinement
 codex_path = "codex"
 
+[report]
+template = "reading" # reading: colorful; compact: quick scan; print: full archive
+
 [privacy]
 allow_cloud_summary = false
 allow_external_delivery = false

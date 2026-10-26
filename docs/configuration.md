@@ -17,6 +17,7 @@
 | `schedule.collection_seconds` | 采集间隔30至86400秒 |
 | `schedule.hours` | 每天处理的小时列表，0至23，可设置多次 |
 | `summary.provider` | `local`编排分类摘要；`codex`可选云端整理 |
+| `report.template` | `reading`彩色阅读版（默认）、`compact`紧凑速览版、`print`正式打印版；生成时固定到报告中，所有出口使用相同选择 |
 | `privacy.allow_cloud_summary` | 启用Codex整理前必须明确开启 |
 | `privacy.allow_external_delivery` | 所有非本机投递的总开关，默认false |
 | `privacy.show_own_addresses` | 仅恢复已配置本人地址，不恢复其他人的地址 |

@@ -16,6 +16,7 @@ DEFAULTS = {
                    'allowed_models': ['qwen3.5:9b', 'gemma4:e4b', 'gemma4:12b-mlx', 'nemotron-3-nano:4b']},
     'schedule': {'collection_seconds': 900, 'hours': [9, 21]},
     'summary': {'provider': 'local', 'codex_path': 'codex'},
+    'report': {'template': 'reading'},
     'privacy': {'allow_cloud_summary': False, 'allow_external_delivery': False, 'show_own_addresses': False, 'raw_retention_hours': 72},
     'delivery': [{'id': 'archive', 'type': 'archive', 'enabled': True, 'path': 'archive'}],
 }
@@ -29,6 +30,7 @@ DRIVER_KEYS = {
 ACTIVE = False
 CURRENT = copy.deepcopy(DEFAULTS)
 CONFIG_PATH = None
+REPORT_TEMPLATES = ('reading', 'compact', 'print')
 
 def default_config_path():
     return Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home()/'.config')))/'local-mail-agent/config.toml'
@@ -48,6 +50,8 @@ def get():
     return CURRENT
 
 def validate(cfg):
+    if cfg['report']['template'] not in REPORT_TEMPLATES:
+        raise ValueError('report.template must be reading, compact or print')
     if cfg['source']['kind'] not in {'apple_mail', 'eml'}:
         raise ValueError('source.kind must be apple_mail or eml')
     if cfg['summary']['provider'] not in {'local', 'codex'}:

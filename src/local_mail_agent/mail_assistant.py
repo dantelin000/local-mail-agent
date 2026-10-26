@@ -271,7 +271,7 @@ def start_job(messages, model, source):
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass
-    def send(self, status, content, content_type='application/json; charset=utf-8'):
+    def send(self, status, content, content_type='application/json; charset=utf-8', policy=None):
         if isinstance(content, dict): content = json.dumps(content, ensure_ascii=False)
         data = content.encode('utf-8')
         self.send_response(status)
@@ -281,7 +281,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'DENY')
         self.send_header('Referrer-Policy', 'no-referrer')
-        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'nonce-" + self.server.csrf + "'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+        self.send_header('Content-Security-Policy', policy or "default-src 'none'; script-src 'nonce-" + self.server.csrf + "'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
         self.end_headers()
         self.wfile.write(data)
     def valid_host(self):
@@ -303,7 +303,7 @@ class Handler(BaseHTTPRequestHandler):
                 own_accounts=collector.message_accounts()
                 for message in messages:message['receiving_accounts']=own_accounts.get(message['id'],[])
             return self.send(200, {'messages': messages, 'jobs': jobs, 'model': self.server.model,
-                'version': '0.1.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex', 'pipeline':pipeline,
+                'version': '0.2.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex', 'pipeline':pipeline,
                 'live_mail_connected':pipeline.get('collection',{}).get('state') in ('ok','partial')})
         if self.path.startswith('/api/report/'):
             name=self.path.removeprefix('/api/report/')
@@ -311,8 +311,9 @@ class Handler(BaseHTTPRequestHandler):
             name=urllib.parse.unquote(name)
             target=PRIVATE/'reports'/name
             if not target.is_file() or target.is_symlink():return self.send(404,{'error':'not_found'})
-            return self.send(200,target.read_text(),'text/html; charset=utf-8' if target.suffix=='.html' else 'application/json; charset=utf-8' if target.suffix=='.json' else 'text/plain; charset=utf-8')
-        if self.path == '/api/health': return self.send(200, {'status': 'ok', 'version': '0.1.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex'})
+            from . import report_layouts
+            return self.send(200,target.read_text(),'text/html; charset=utf-8' if target.suffix=='.html' else 'application/json; charset=utf-8' if target.suffix=='.json' else 'text/plain; charset=utf-8',policy=report_layouts.content_policy() if target.suffix=='.html' else None)
+        if self.path == '/api/health': return self.send(200, {'status': 'ok', 'version': '0.2.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex'})
         return self.send(404, {'error': 'not_found'})
     def do_POST(self):
         if not self.valid_host() or self.headers.get('Origin') != self.server.origin or not secrets.compare_digest(self.headers.get('X-CSRF-Token', ''), self.server.csrf):

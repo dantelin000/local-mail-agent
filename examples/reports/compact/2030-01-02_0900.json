@@ -1,0 +1,79 @@
+{
+  "version": 2,
+  "template": "compact",
+  "report_id": "mail-20300102-0900",
+  "slot": "2030-01-02T09:00:00+00:00",
+  "timezone": "UTC",
+  "markdown": "# 合成演示报告\n\n这是虚构演示数据，未读取任何邮箱，也未调用模型或网络。\n\n# 邮件简报\n\n本机编排的已脱敏分类摘要；未调用云端汇总。\n\n## 覆盖范围\n可整理摘要 7 封；仅本机保留 1 封；处理异常 0 封。\n服务商同步新鲜度：未独立验证。\n\n## 💬 待回复\n\n### 客户询问发货安排 · demo-customer\n客户希望了解发货时间，需要核对订单后回复。\n分类：客户 · 优先级：高\n\n## 🔴 优先处理\n\n本轮无新事项。\n\n## 📰 兴趣与其他动态\n\n### 开源工具技术周刊 · demo-tech\n本期介绍工具更新、使用技巧和社区进展，可按兴趣阅读。\n分类：订阅 · 优先级：低\n\n### 周末购物优惠 · demo-shopping\n常用家居用品有折扣活动，无需立即处理。\n分类：广告 · 优先级：低\n\n### 游戏更新动态 · demo-games\n关注的游戏发布内容更新，包含玩法调整和社区活动。展开后可以阅读完整摘要：本次更新增加了合作玩法，调整了关卡难度，并公布下一轮社区活动安排。可按兴趣查看原邮件中的说明。\n分类：订阅 · 优先级：低\n\n### 房产与居住周刊 · demo-property\n本期介绍区域房源动态与居住趋势，可留作浏览资料。\n分类：订阅 · 优先级：低\n\n### 投资市场周报 · demo-investing\n本期整理市场观察与基金动态；这是资讯摘要，可自行核对原邮件。\n分类：订阅 · 优先级：低\n\n### 订单包装方案可确认 · demo-order\n商家提供两种包装方案，可有空时核对并决定是否调整。\n分类：订单 · 优先级：中",
+  "messages": [
+    {
+      "id": "demo-customer",
+      "subject": "客户询问发货安排",
+      "summary": "客户希望了解发货时间，需要核对订单后回复。",
+      "category": "客户",
+      "priority": "高",
+      "needs_reply": 1,
+      "deadline": ""
+    },
+    {
+      "id": "demo-tech",
+      "subject": "开源工具技术周刊",
+      "summary": "本期介绍工具更新、使用技巧和社区进展，可按兴趣阅读。",
+      "category": "订阅",
+      "priority": "低",
+      "needs_reply": 0,
+      "deadline": ""
+    },
+    {
+      "id": "demo-shopping",
+      "subject": "周末购物优惠",
+      "summary": "常用家居用品有折扣活动，无需立即处理。",
+      "category": "广告",
+      "priority": "低",
+      "needs_reply": 0,
+      "deadline": ""
+    },
+    {
+      "id": "demo-games",
+      "subject": "游戏更新动态",
+      "summary": "关注的游戏发布内容更新，包含玩法调整和社区活动。展开后可以阅读完整摘要：本次更新增加了合作玩法，调整了关卡难度，并公布下一轮社区活动安排。可按兴趣查看原邮件中的说明。",
+      "category": "订阅",
+      "priority": "低",
+      "needs_reply": 0,
+      "deadline": ""
+    },
+    {
+      "id": "demo-property",
+      "subject": "房产与居住周刊",
+      "summary": "本期介绍区域房源动态与居住趋势，可留作浏览资料。",
+      "category": "订阅",
+      "priority": "低",
+      "needs_reply": 0,
+      "deadline": ""
+    },
+    {
+      "id": "demo-investing",
+      "subject": "投资市场周报",
+      "summary": "本期整理市场观察与基金动态；这是资讯摘要，可自行核对原邮件。",
+      "category": "订阅",
+      "priority": "低",
+      "needs_reply": 0,
+      "deadline": ""
+    },
+    {
+      "id": "demo-order",
+      "subject": "订单包装方案可确认",
+      "summary": "商家提供两种包装方案，可有空时核对并决定是否调整。",
+      "category": "订单",
+      "priority": "中",
+      "needs_reply": 0,
+      "deadline": ""
+    }
+  ],
+  "coverage": {
+    "local_only_messages": 1,
+    "processing_errors": 0,
+    "sample": "synthetic"
+  },
+  "own_addresses": {}
+}

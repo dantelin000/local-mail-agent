@@ -69,4 +69,14 @@ class HTTPBoundaryTests(unittest.TestCase):
     def test_non_eml_import_rejected(self):
         self.assertEqual(self.request('/api/import',{'files':[{'name':'sample.exe','data':'AA=='}]})[0],400)
 
+    def test_report_html_uses_fixed_hash_policy_without_dashboard_network_permissions(self):
+        from local_mail_agent import reports,reading_layout
+        from test_config_and_reports import ITEM,SLOT
+        value=reports.build(SLOT,[ITEM],{})
+        reports.save(value)
+        with self.opener.open(self.server.origin+'/api/report/2030-01-02_0900.html',timeout=5) as response:
+            self.assertEqual(response.headers['Content-Security-Policy'],reading_layout.content_policy())
+            self.assertNotIn("connect-src 'self'",response.headers['Content-Security-Policy'])
+            self.assertEqual(response.read(),reports.render(value))
+
 if __name__=='__main__':unittest.main()

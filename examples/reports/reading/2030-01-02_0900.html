@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-iYaDCQwja5UMNKKdks7hxYCVnw+tStj1NSRWik5ynTE='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>邮件简报 · 阅读版</title>
+  <style>
+    :root{color-scheme:light dark}
+    body{margin:0;padding:12px;background:light-dark(#eef2f8,#10151e)}
+    main{max-width:760px;margin:0 auto}
+    @media(max-width:520px){body{padding:0}#mail-reading-preview{border-radius:0}}
+    @media print{body{padding:0;background:white}.mp-toolbar,.mp-nav{display:none!important}}
+  </style>
+</head>
+<body><main><div id="mail-reading-preview" aria-label="邮件简报阅读版"><style>
+    #mail-reading-preview{--mp-page:light-dark(#f2f5fb,#10151e);--mp-paper:light-dark(#fff,#181f2a);--mp-ink:light-dark(#24334c,#e4ebf5);--mp-muted:light-dark(#64748b,#a4b2c8);--mp-line:light-dark(#dfe6ef,#344154);--mp-blue:light-dark(#235ac7,#9abfff);--mp-purple:light-dark(#7940bd,#c6a4fa);--mp-teal:light-dark(#087c72,#7ad5c8);--mp-gold:light-dark(#966300,#f4cb76);--mp-red:light-dark(#ad3d4c,#ffadba);--mp-font:18px;--mp-gap:24px;--mp-radius:16px;box-sizing:border-box;width:100%;color:var(--mp-ink);background:var(--mp-paper);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:var(--mp-font);line-height:1.75;padding:28px 32px 34px;border-top:5px solid var(--mp-blue);border-radius:var(--mp-radius);color-scheme:inherit;overflow-wrap:anywhere}
+    #mail-reading-preview *{box-sizing:border-box}
+    #mail-reading-preview [hidden]{display:none!important}
+    #mail-reading-preview h1,#mail-reading-preview h2,#mail-reading-preview h3,#mail-reading-preview p{margin:0}
+    #mail-reading-preview h1{font-size:calc(var(--mp-font)*1.55);font-weight:500;letter-spacing:.01em;line-height:1.4;margin:10px 0}
+    #mail-reading-preview h2{font-size:calc(var(--mp-font)*1.18);font-weight:500;line-height:1.5;display:flex;align-items:center;gap:10px}
+    #mail-reading-preview h3{font-size:var(--mp-font);line-height:1.6;font-weight:500}
+    #mail-reading-preview .mp-topline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;justify-content:space-between;padding-right:76px}
+    #mail-reading-preview .mp-wordmark{font-size:12px;letter-spacing:.15em;color:var(--mp-blue);font-weight:500}
+    #mail-reading-preview .mp-sample{font-size:12px;color:var(--mp-muted)}
+    #mail-reading-preview .mp-subtitle{font-size:14px;color:var(--mp-muted)}
+    #mail-reading-preview .mp-lead{margin:18px 0 20px;padding:14px 18px;background:color-mix(in srgb,var(--mp-blue) 6%,var(--mp-paper));border-left:3px solid var(--mp-blue);border-radius:0 9px 9px 0}
+    #mail-reading-preview .mp-lead strong{font-weight:500;color:var(--mp-blue)}
+    #mail-reading-preview .mp-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:20px 0}
+    #mail-reading-preview .mp-setting{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--mp-muted)}
+    #mail-reading-preview select,#mail-reading-preview button{font:inherit;font-size:13px;color:var(--mp-ink);background:var(--mp-paper);border:1px solid var(--mp-line);border-radius:8px;min-height:38px;padding:7px 10px}
+    #mail-reading-preview button{margin-left:auto}
+    #mail-reading-preview select:focus-visible,#mail-reading-preview button:focus-visible,#mail-reading-preview summary:focus-visible,#mail-reading-preview a:focus-visible{outline:2px solid var(--mp-blue);outline-offset:3px}
+    #mail-reading-preview .mp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+    #mail-reading-preview .mp-stat{--mp-tone:var(--mp-blue);display:flex;flex-direction:column;gap:3px;padding:14px 18px;background:color-mix(in srgb,var(--mp-tone) 7%,var(--mp-paper));border-radius:11px}
+    #mail-reading-preview .mp-stat:nth-child(2){--mp-tone:var(--mp-purple)}
+    #mail-reading-preview .mp-stat:nth-child(3){--mp-tone:var(--mp-teal)}
+    #mail-reading-preview .mp-stat-label{font-size:13px;color:var(--mp-tone)}
+    #mail-reading-preview .mp-stat-number{font-size:28px;line-height:1.4;color:var(--mp-tone);font-weight:500}
+    #mail-reading-preview .mp-stat-number small{font-size:13px;font-weight:400;margin-left:5px}
+    #mail-reading-preview .mp-nav{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 6px}
+    #mail-reading-preview .mp-nav a{--mp-tone:var(--mp-blue);text-decoration:none;color:var(--mp-tone);background:color-mix(in srgb,var(--mp-tone) 8%,var(--mp-paper));padding:7px 11px;border-radius:9px;font-size:14px;white-space:nowrap}
+    #mail-reading-preview .mp-nav a:nth-child(2){--mp-tone:var(--mp-purple)}
+    #mail-reading-preview .mp-nav a:nth-child(3){--mp-tone:var(--mp-teal)}
+    #mail-reading-preview .mp-section{margin-top:var(--mp-gap);padding-top:var(--mp-gap);border-top:1px solid var(--mp-line)}
+    #mail-reading-preview .mp-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+    #mail-reading-preview .mp-section-title>span{font-size:13px;color:var(--mp-muted)}
+    #mail-reading-preview .mp-section[data-section="action"] h2{color:var(--mp-blue)}
+    #mail-reading-preview .mp-section[data-section="optional"] h2{color:var(--mp-purple)}
+    #mail-reading-preview .mp-section[data-section="interests"] h2{color:var(--mp-teal)}
+    #mail-reading-preview .mp-section-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:color-mix(in srgb,currentColor 8%,var(--mp-paper));font-size:20px}
+    #mail-reading-preview .mp-action{padding:17px 0}
+    #mail-reading-preview .mp-action+.mp-action{border-top:1px solid var(--mp-line)}
+    #mail-reading-preview .mp-action-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+    #mail-reading-preview .mp-priority{font-size:12px;padding:2px 8px;border-radius:6px;white-space:nowrap;background:color-mix(in srgb,var(--mp-red) 9%,var(--mp-paper));color:var(--mp-red)}
+    #mail-reading-preview .mp-action p{margin:7px 0}
+    #mail-reading-preview .mp-source{font-size:13px;color:var(--mp-muted);margin:8px 0}
+    #mail-reading-preview .mp-mini{margin:10px 0 0;font-size:14px}
+    #mail-reading-preview .mp-mini>summary{color:var(--mp-blue);min-height:32px;padding:4px 0}
+    #mail-reading-preview .mp-mini[open]>summary{margin-bottom:6px}
+    #mail-reading-preview .mp-detail-body{border-left:2px solid var(--mp-line);padding:2px 0 2px 14px}
+    #mail-reading-preview .mp-detail-body ul{padding-left:20px;margin:7px 0}
+    #mail-reading-preview .mp-detail-body li{margin:4px 0}
+    #mail-reading-preview .mp-optional{padding:14px 16px;border-radius:10px;background:color-mix(in srgb,var(--mp-purple) 5%,var(--mp-paper));margin-top:12px}
+    #mail-reading-preview .mp-optional p{margin-top:6px}
+    #mail-reading-preview .mp-interests-intro{font-size:14px;color:var(--mp-muted);margin:0 0 15px}
+    #mail-reading-preview .mp-interest{--mp-tone:var(--mp-blue);border:1px solid color-mix(in srgb,var(--mp-tone) 22%,var(--mp-line));border-radius:12px;margin:12px 0;overflow:clip}
+    #mail-reading-preview .mp-interest[data-topic="investing"]{--mp-tone:var(--mp-purple)}
+    #mail-reading-preview .mp-interest[data-topic="property"]{--mp-tone:var(--mp-teal)}
+    #mail-reading-preview .mp-interest[data-topic="technology"]{--mp-tone:light-dark(#196e96,#8cd4f4)}
+    #mail-reading-preview .mp-interest[data-topic="games"]{--mp-tone:var(--mp-gold)}
+    #mail-reading-preview .mp-interest>summary{display:flex;align-items:flex-start;gap:12px;list-style:none;padding:15px 17px;background:color-mix(in srgb,var(--mp-tone) 6%,var(--mp-paper))}
+    #mail-reading-preview .mp-interest>summary::-webkit-details-marker{display:none}
+    #mail-reading-preview .mp-interest-icon{font-size:20px;flex:0 0 26px;line-height:1.5}
+    #mail-reading-preview .mp-interest-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;color:var(--mp-tone);font-weight:500}
+    #mail-reading-preview .mp-interest-count{font-size:13px;color:var(--mp-muted);font-weight:400}
+    #mail-reading-preview .mp-interest-preview{display:block;font-size:14px;color:var(--mp-muted);margin-top:3px}
+    #mail-reading-preview .mp-interest-label{flex:1;min-width:0}
+    #mail-reading-preview .mp-interest-indicator{color:var(--mp-tone);font-size:21px;flex:0 0 15px;text-align:center}
+    #mail-reading-preview .mp-interest-indicator::before{content:"+"}
+    #mail-reading-preview .mp-interest[open] .mp-interest-indicator::before{content:"−"}
+    #mail-reading-preview .mp-interest-body{padding:0 20px}
+    #mail-reading-preview .mp-topic{padding:20px 0}
+    #mail-reading-preview .mp-topic+.mp-topic{border-top:1px solid var(--mp-line)}
+    #mail-reading-preview .mp-topic h3{color:var(--mp-tone)}
+    #mail-reading-preview .mp-topic p{margin:8px 0}
+    #mail-reading-preview .mp-topic ul{padding-left:21px;margin:8px 0}
+    #mail-reading-preview .mp-topic li{margin:5px 0}
+    #mail-reading-preview .mp-topic .mp-mini>summary{color:var(--mp-muted)}
+    #mail-reading-preview .mp-private{margin-top:24px;border-top:1px solid var(--mp-line);padding-top:18px;font-size:14px;color:var(--mp-muted)}
+    #mail-reading-preview .mp-private summary{color:var(--mp-gold);min-height:38px;padding:6px 0}
+    #mail-reading-preview .mp-footer{font-size:12px;color:var(--mp-muted);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:25px;padding-top:16px;border-top:1px solid var(--mp-line)}
+    #mail-reading-preview .mp-accessible{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+    @media(max-width:520px){#mail-reading-preview{padding:22px 16px 26px}#mail-reading-preview .mp-topline{padding-right:70px}#mail-reading-preview h1{font-size:calc(var(--mp-font)*1.35)}#mail-reading-preview .mp-stats{gap:8px}#mail-reading-preview .mp-stat{padding:12px 11px}#mail-reading-preview .mp-stat-number{font-size:26px}#mail-reading-preview .mp-nav{gap:7px}#mail-reading-preview .mp-nav a{padding:7px 9px}#mail-reading-preview .mp-interest>summary{padding:13px 12px;gap:8px}#mail-reading-preview .mp-interest-body{padding:0 14px}#mail-reading-preview button,#mail-reading-preview select{min-height:44px}#mail-reading-preview .mp-toolbar{gap:8px}#mail-reading-preview .mp-setting{gap:5px}}
+    @media(prefers-reduced-motion:reduce){#mail-reading-preview{scroll-behavior:auto}}
+  
+#mail-reading-preview .mp-editorial p{white-space:pre-wrap;margin:9px 0}#mail-reading-preview .mp-editorial h3{margin-top:16px}#mail-reading-preview .mp-topic p{white-space:pre-wrap}#mail-reading-preview .mp-interest[data-topic="other"]{--mp-tone:var(--mp-muted)}
+</style><header><div class="mp-topline"><span class="mp-wordmark">DAILY MAIL · 每日邮件</span><span class="mp-sample">虚构邮件 · 版面演示</span></div><h1>先看这1件，再看你感兴趣的。</h1><p class="mp-subtitle">2030年01月02日 · 早间阅读版 · UTC 09:00</p><div class="mp-lead">本轮有1封需关注、1封可选决定，另有5封兴趣与其他动态。<strong> 想看哪一类，就展开哪一类。</strong></div></header><div class="mp-toolbar" aria-label="阅读设置"><label class="mp-setting">字号<select data-control="font" aria-label="阅读字号"><option value="16">标准</option><option value="18" selected>舒适</option><option value="20">大字</option></select></label><label class="mp-setting">外观<select data-control="theme" aria-label="阅读外观"><option value="system">随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><button type="button" data-control="expand" aria-pressed="false">展开全部</button></div><div class="mp-stats" aria-label="本轮概览"><div class="mp-stat"><span class="mp-stat-label">✉️ 可读摘要</span><span class="mp-stat-number">7<small>封</small></span></div><div class="mp-stat"><span class="mp-stat-label">📌 需要关注</span><span class="mp-stat-number">1<small>封</small></span></div><div class="mp-stat"><span class="mp-stat-label">📰 兴趣与动态</span><span class="mp-stat-number">5<small>封</small></span></div></div><nav class="mp-nav" aria-label="简报目录"><a href="#mp-action">📌 需要关注</a><a href="#mp-optional">💬 可选决定</a><a href="#mp-interests">📰 兴趣资讯</a></nav><section class="mp-section" data-section="action" id="mp-action"><div class="mp-section-title"><h2><span class="mp-section-icon" aria-hidden="true">📌</span>先看这些</h2><span>1封</span></div><article class="mp-action"><div class="mp-action-head"><span class="mp-priority">待回复</span><h3>客户询问发货安排</h3></div><p>客户希望了解发货时间，需要核对订单后回复。</p><details class="mp-mini" data-detail="source-demo-customer"><summary>邮件来源与本人收件邮箱</summary><div class="mp-detail-body"><p class="mp-source">分类：客户 · 优先级：高</p><p class="mp-source">原邮件主题：客户询问发货安排<br>邮件编号：demo-customer</p></div></details></article></section><section class="mp-section" data-section="optional" id="mp-optional"><div class="mp-section-title"><h2><span class="mp-section-icon" aria-hidden="true">💬</span>有空再决定</h2><span>1封</span></div><div class="mp-optional"><h3>订单包装方案可确认</h3><p>商家提供两种包装方案，可有空时核对并决定是否调整。</p><details class="mp-mini" data-detail="source-demo-order"><summary>邮件来源与本人收件邮箱</summary><div class="mp-detail-body"><p class="mp-source">分类：订单 · 优先级：中</p><p class="mp-source">原邮件主题：订单包装方案可确认<br>邮件编号：demo-order</p></div></details></div></section><section class="mp-section" data-section="interests" id="mp-interests"><div class="mp-section-title"><h2><span class="mp-section-icon" aria-hidden="true">📰</span>留给兴趣的部分</h2><span>5封</span></div><p class="mp-interests-intro">先看主题提要；展开后保留每封邮件的完整脱敏摘要。</p><details class="mp-interest" data-topic="shopping" data-detail="topic-shopping"><summary><span class="mp-interest-icon" aria-hidden="true">🛍️</span><span class="mp-interest-label"><span class="mp-interest-heading">购物与优惠<span class="mp-interest-count">1封</span></span><span class="mp-interest-preview">周末购物优惠</span></span><span class="mp-interest-indicator" aria-hidden="true"></span></summary><div class="mp-interest-body"><article class="mp-topic"><h3>周末购物优惠</h3><p>常用家居用品有折扣活动，无需立即处理。</p><p class="mp-source">分类：广告 · 优先级：低</p><details class="mp-mini" data-detail="source-demo-shopping"><summary>邮件来源与本人收件邮箱</summary><p class="mp-source">原邮件主题：周末购物优惠<br>邮件编号：demo-shopping</p></details></article></div></details><details class="mp-interest" data-topic="investing" data-detail="topic-investing"><summary><span class="mp-interest-icon" aria-hidden="true">📈</span><span class="mp-interest-label"><span class="mp-interest-heading">投资与市场<span class="mp-interest-count">1封</span></span><span class="mp-interest-preview">投资市场周报</span></span><span class="mp-interest-indicator" aria-hidden="true"></span></summary><div class="mp-interest-body"><article class="mp-topic"><h3>投资市场周报</h3><p>本期整理市场观察与基金动态；这是资讯摘要，可自行核对原邮件。</p><p class="mp-source">分类：订阅 · 优先级：低</p><details class="mp-mini" data-detail="source-demo-investing"><summary>邮件来源与本人收件邮箱</summary><p class="mp-source">原邮件主题：投资市场周报<br>邮件编号：demo-investing</p></details></article></div></details><details class="mp-interest" data-topic="property" data-detail="topic-property"><summary><span class="mp-interest-icon" aria-hidden="true">🏠</span><span class="mp-interest-label"><span class="mp-interest-heading">房产与居住<span class="mp-interest-count">1封</span></span><span class="mp-interest-preview">房产与居住周刊</span></span><span class="mp-interest-indicator" aria-hidden="true"></span></summary><div class="mp-interest-body"><article class="mp-topic"><h3>房产与居住周刊</h3><p>本期介绍区域房源动态与居住趋势，可留作浏览资料。</p><p class="mp-source">分类：订阅 · 优先级：低</p><details class="mp-mini" data-detail="source-demo-property"><summary>邮件来源与本人收件邮箱</summary><p class="mp-source">原邮件主题：房产与居住周刊<br>邮件编号：demo-property</p></details></article></div></details><details class="mp-interest" data-topic="technology" data-detail="topic-technology"><summary><span class="mp-interest-icon" aria-hidden="true">💻</span><span class="mp-interest-label"><span class="mp-interest-heading">技术与本地 AI<span class="mp-interest-count">1封</span></span><span class="mp-interest-preview">开源工具技术周刊</span></span><span class="mp-interest-indicator" aria-hidden="true"></span></summary><div class="mp-interest-body"><article class="mp-topic"><h3>开源工具技术周刊</h3><p>本期介绍工具更新、使用技巧和社区进展，可按兴趣阅读。</p><p class="mp-source">分类：订阅 · 优先级：低</p><details class="mp-mini" data-detail="source-demo-tech"><summary>邮件来源与本人收件邮箱</summary><p class="mp-source">原邮件主题：开源工具技术周刊<br>邮件编号：demo-tech</p></details></article></div></details><details class="mp-interest" data-topic="games" data-detail="topic-games"><summary><span class="mp-interest-icon" aria-hidden="true">🎮</span><span class="mp-interest-label"><span class="mp-interest-heading">游戏与娱乐<span class="mp-interest-count">1封</span></span><span class="mp-interest-preview">游戏更新动态</span></span><span class="mp-interest-indicator" aria-hidden="true"></span></summary><div class="mp-interest-body"><article class="mp-topic"><h3>游戏更新动态</h3><p>关注的游戏发布内容更新，包含玩法调整和社区活动。展开后可以阅读完整摘要：本次更新增加了合作玩法，调整了关卡难度，并公布下一轮社区活动安排。可按兴趣查看原邮件中的说明。</p><p class="mp-source">分类：订阅 · 优先级：低</p><details class="mp-mini" data-detail="source-demo-games"><summary>邮件来源与本人收件邮箱</summary><p class="mp-source">原邮件主题：游戏更新动态<br>邮件编号：demo-games</p></details></article></div></details></section><details class="mp-private" data-detail="editorial"><summary>📝 完整编排报告</summary><div class="mp-editorial"><h3>合成演示报告</h3><p>这是虚构演示数据，未读取任何邮箱，也未调用模型或网络。</p><h3>邮件简报</h3><p>本机编排的已脱敏分类摘要；未调用云端汇总。</p><h3>覆盖范围</h3><p>可整理摘要 7 封；仅本机保留 1 封；处理异常 0 封。</p><p>服务商同步新鲜度：未独立验证。</p><h3>💬 待回复</h3><h3>客户询问发货安排 · demo-customer</h3><p>客户希望了解发货时间，需要核对订单后回复。</p><p>分类：客户 · 优先级：高</p><h3>🔴 优先处理</h3><p>本轮无新事项。</p><h3>📰 兴趣与其他动态</h3><h3>开源工具技术周刊 · demo-tech</h3><p>本期介绍工具更新、使用技巧和社区进展，可按兴趣阅读。</p><p>分类：订阅 · 优先级：低</p><h3>周末购物优惠 · demo-shopping</h3><p>常用家居用品有折扣活动，无需立即处理。</p><p>分类：广告 · 优先级：低</p><h3>游戏更新动态 · demo-games</h3><p>关注的游戏发布内容更新，包含玩法调整和社区活动。展开后可以阅读完整摘要：本次更新增加了合作玩法，调整了关卡难度，并公布下一轮社区活动安排。可按兴趣查看原邮件中的说明。</p><p>分类：订阅 · 优先级：低</p><h3>房产与居住周刊 · demo-property</h3><p>本期介绍区域房源动态与居住趋势，可留作浏览资料。</p><p>分类：订阅 · 优先级：低</p><h3>投资市场周报 · demo-investing</h3><p>本期整理市场观察与基金动态；这是资讯摘要，可自行核对原邮件。</p><p>分类：订阅 · 优先级：低</p><h3>订单包装方案可确认 · demo-order</h3><p>商家提供两种包装方案，可有空时核对并决定是否调整。</p><p>分类：订单 · 优先级：中</p></div></details><details class="mp-private" data-detail="coverage"><summary>🔒 覆盖范围与本机保留</summary><p>本轮可读摘要7封；仅本机保留1封；处理异常0封。</p><p>本轮为去重后的新处理邮件。邮件服务商的同步新鲜度未独立验证；分类和摘要仍可回原邮件核对。</p></details><footer class="mp-footer"><span>原始邮件与敏感内容保留在本机</span><span>阅读版 · reading-v1</span></footer><span class="mp-accessible" role="status" aria-live="polite" data-control="notice"></span><script data-reading-controls>
+    (() => {
+      'use strict';
+      const root = document.getElementById('mail-reading-preview');
+      const font = root.querySelector('[data-control="font"]');
+      const theme = root.querySelector('[data-control="theme"]');
+      const expand = root.querySelector('[data-control="expand"]');
+      const notice = root.querySelector('[data-control="notice"]');
+      const details = [...root.querySelectorAll('[data-detail]')];
+      const settings = {font:18,theme:'system',gap:24,radius:16};
+      let restoring = false;
+      const apply = () => {
+        root.style.setProperty('--mp-font', settings.font + 'px');
+        root.style.setProperty('--mp-gap', settings.gap + 'px');
+        root.style.setProperty('--mp-radius', settings.radius + 'px');
+        if (settings.theme === 'system') root.style.removeProperty('color-scheme');
+        else root.style.colorScheme = settings.theme;
+        font.value = String(settings.font);
+        theme.value = settings.theme;
+      };
+      const syncExpand = () => {
+        const all = details.every(item => item.open);
+        expand.setAttribute('aria-pressed', String(all));
+        expand.textContent = all ? '收起全部' : '展开全部';
+      };
+      const save = () => {
+        if (restoring) return;
+        try { localStorage.setItem('mail-agent-reading-settings',JSON.stringify({font:settings.font,theme:settings.theme,gap:settings.gap,radius:settings.radius,open:details.filter(item=>item.open).map(item=>item.dataset.detail)})); } catch (_) {}
+      };
+      const restore = payload => {
+        const value = payload?.privateContent || payload;
+        if (!value || typeof value !== 'object') return;
+        restoring = true;
+        if ([16,18,20].includes(Number(value.font))) settings.font = Number(value.font);
+        if (['system','light','dark'].includes(value.theme)) settings.theme = value.theme;
+        if (Number.isFinite(value.gap) && value.gap >= 16 && value.gap <= 32) settings.gap = value.gap;
+        if (Number.isFinite(value.radius) && value.radius >= 0 && value.radius <= 24) settings.radius = value.radius;
+        if (Array.isArray(value.open)) details.forEach(item=>{item.open=value.open.includes(item.dataset.detail);});
+        apply(); syncExpand(); restoring = false;
+      };
+      apply();
+      try { restore(JSON.parse(localStorage.getItem('mail-agent-reading-settings'))); } catch (_) {}
+      font.addEventListener('change',()=>{settings.font=Number(font.value);apply();notice.textContent='字号已调整';save();});
+      theme.addEventListener('change',()=>{settings.theme=theme.value;apply();notice.textContent='外观已调整';save();});
+      expand.addEventListener('click',()=>{const opening=!details.every(item=>item.open);details.forEach(item=>{item.open=opening;});syncExpand();notice.textContent=opening?'全部摘要已展开':'全部摘要已收起';save();});
+      details.forEach(item=>{
+        item.addEventListener('toggle',syncExpand);
+        item.querySelector('summary').addEventListener('click',()=>{setTimeout(save,0);});
+      });
+      root.querySelectorAll('button,select,summary,a').forEach(item=>item.classList.add('cursor-interaction'));
+    })();
+  </script></div></main></body></html>

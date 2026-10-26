@@ -4,9 +4,9 @@
 
 用 Apple Mail 管理多个账号，本机 Ollama 模型分类、脱敏和摘要，再生成可以折叠阅读的 HTML 邮件简报。也支持导入 EML/mbox 文件。默认只在本机留档；已读回写、云端汇总和其他投递方式都可以单独选择。
 
-[English](README.en.md) · [配置](docs/configuration.md) · [投递方式](docs/delivery.md) · [安全边界](SECURITY.md) · [开发说明](CONTRIBUTING.md)
+[English](README.en.md) · [配置](docs/configuration.md) · [三种报告样板](docs/report-templates.md) · [投递方式](docs/delivery.md) · [安全边界](SECURITY.md) · [开发说明](CONTRIBUTING.md)
 
-> 0.1.0 Alpha。Apple Mail 采集需要 macOS；文件导入、报告和投递支持 macOS/Linux。外部邮箱和 Telegram 账号需自行配置。自动测试使用合成数据和模拟接口。
+> 0.2.0 Alpha。Apple Mail 采集需要 macOS；文件导入、报告和投递支持 macOS/Linux。外部邮箱和 Telegram 账号需自行配置。自动测试使用合成数据和模拟接口。
 
 ## 可以选择什么
 
@@ -17,6 +17,7 @@
 | 时间 | 时区、采集间隔、每天处理的小时数、回溯窗口 | UTC；每15分钟；09/21点；24小时 |
 | 原邮件 | 保持状态；成功处理、身份核对后标记已读 | 保持状态 |
 | 汇总 | 直接编排本机分类摘要；可选 Codex CLI 云端汇总 | 本机编排 |
+| 报告样板 | 彩色阅读版 `reading`、紧凑速览版 `compact`、正式打印版 `print` | 彩色阅读版 |
 | 本机留档 | Markdown、HTML、结构化 JSON；自定义归档目录 | 开启 |
 | 邮件投递 | SMTP STARTTLS / SSL；固定发件人与收件人 | 关闭 |
 | Telegram Bot | 本机直接通过 Bot API 发给指定本人私聊 | 关闭 |
@@ -38,6 +39,10 @@ local-mail-agent demo
 ```
 
 最后一条命令输出合成演示 HTML 的本机路径。**演示不读取邮箱、不调用模型、不访问网络，也不会推送报告。**
+
+比较三种样板：`local-mail-agent demo --all-templates`。包内也附有[可直接打开的虚构样板](examples/reports/index.html)。
+通过 `[report] template = "reading"` 选择版面，支持 `reading`、`compact`、`print`；修改后重启进程，对新报告生效。
+本机留档与所有投递渠道使用同一份报告中固定的版面。详见[样板与重新排版命令](docs/report-templates.md)。
 
 配置默认位于 `~/.config/local-mail-agent/config.toml`，可以通过 `--config` 指定另一份。数据默认在 macOS 的 `~/Library/Application Support/LocalMailAgent/` 或 Linux 的 `~/.local/share/local-mail-agent/`；不写入源码目录。
 
