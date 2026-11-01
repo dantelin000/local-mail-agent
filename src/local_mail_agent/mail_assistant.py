@@ -19,6 +19,7 @@ import secrets
 import sqlite3
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -73,16 +74,28 @@ class TextOnly(HTMLParser):
         self.parts, self.skip = [], 0
     def handle_starttag(self, tag, attrs):
         if tag in ('script', 'style', 'head'): self.skip += 1
-        if tag in ('p', 'br', 'div', 'tr', 'li'): self.parts.append('\n')
+        if tag in BLOCK_TAGS: self.parts.append('\n')
     def handle_endtag(self, tag):
         if tag in ('script', 'style', 'head') and self.skip: self.skip -= 1
+        if tag in BLOCK_TAGS: self.parts.append('\n')
     def handle_data(self, data):
         if not self.skip: self.parts.append(data)
+
+# Only block elements separate text. Inline tags join seamlessly, so <span>83</span><span>9271</span>
+# stays one number and a keyword split across spans still matches the privacy checks.
+BLOCK_TAGS = {'p', 'br', 'div', 'tr', 'td', 'th', 'li', 'ul', 'ol', 'table', 'section', 'article', 'header',
+              'footer', 'blockquote', 'pre', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}
 
 def plain_html(value):
     p = TextOnly()
     p.feed(value)
-    return html.unescape(' '.join(p.parts))
+    return html.unescape(''.join(p.parts))
+
+INVISIBLE = re.compile(r'[\u00ad\u034f\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]')
+
+def normalize(value):
+    """Detection copy only: undo full-width letters and invisible characters so they cannot hide words from the checks."""
+    return unicodedata.normalize('NFKC', INVISIBLE.sub('', str(value or '')))
 
 URL = re.compile(r'(?i)\b(?:https?://|www\.)[^\s<>"\[\]]+')
 EMAIL = re.compile(r'(?i)[a-z0-9.!#$%&\x27*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}')
@@ -95,13 +108,12 @@ PHONE = re.compile(r'(?<!\w)(?:\+\d[\d ()-]{7,}\d|0[23478][\d -]{7,}\d)(?!\w)')
 
 def redact(value):
     """Conservative phase-1 redaction: all URLs and long numbers stay local."""
-    value = html.unescape(str(value or ''))
-    value = re.sub(r'[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]', '', value)
+    value = INVISIBLE.sub('', html.unescape(str(value or '')))
     marks = []
     # Credential-bearing lines are removed, including short/alphanumeric OTPs.
     safe_lines = []
     for line in value.splitlines():
-        if SENSITIVE.search(line):
+        if SENSITIVE.search(normalize(line)):
             marks.append('认证相关内容')
             safe_lines.append('[认证相关内容已隐藏]')
         else: safe_lines.append(line)
@@ -121,7 +133,12 @@ def parse_eml(raw):
     issues = []
     # Text attachments are deliberately not included.
     body = msg.get_body(preferencelist=('plain', 'html')) if msg.is_multipart() else msg
-    text = ''
+    text = alternative = ''
+    # The HTML alternative is what Mail shows; scan it too so it cannot hide content from the privacy gate.
+    html_body = msg.get_body(preferencelist=('html',)) if msg.is_multipart() else None
+    if html_body is not None and html_body is not body and html_body.get_content_disposition() != 'attachment':
+        try: alternative = plain_html(html_body.get_content())[:24000]
+        except Exception: issues.append('正文解析失败')
     if body and body.get_content_disposition() != 'attachment' and body.get_content_type() in ('text/plain', 'text/html'):
         try:
             text = body.get_content()
@@ -138,7 +155,8 @@ def parse_eml(raw):
     try: received = email.utils.parsedate_to_datetime(str(msg['Date'])).isoformat()
     except Exception: issues.append('邮件日期无法确认')
     return {'id': hashlib.sha256(raw).hexdigest()[:20], 'sender': str(msg.get('From', '')),
-            'subject': str(msg.get('Subject', '')), 'received': received, 'body': text, 'issues': issues}
+            'subject': str(msg.get('Subject', '')), 'received': received, 'body': text, 'alternative': alternative,
+            'issues': issues}
 
 def local_api(path, payload=None, timeout=180):
     # No proxy use and no redirects; only the fixed loopback service is reachable.
@@ -163,7 +181,7 @@ def check_model(model):
 
 def classify(parsed, model=MODEL):
     started = time.monotonic()
-    combined = '\n'.join([parsed['sender'], parsed['subject'], parsed['body']])
+    combined = normalize('\n'.join([parsed['sender'], parsed['subject'], parsed['body'], parsed.get('alternative', '')]))
     reasons = list(parsed['issues'])
     blocked = []
     if SENSITIVE.search(combined): blocked.append('认证邮件，仅限本机')
@@ -303,7 +321,7 @@ class Handler(BaseHTTPRequestHandler):
                 own_accounts=collector.message_accounts()
                 for message in messages:message['receiving_accounts']=own_accounts.get(message['id'],[])
             return self.send(200, {'messages': messages, 'jobs': jobs, 'model': self.server.model,
-                'version': '0.2.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex', 'pipeline':pipeline,
+                'version': '0.2.1', 'cloud_export_enabled': config.get()['summary']['provider']=='codex', 'pipeline':pipeline,
                 'live_mail_connected':pipeline.get('collection',{}).get('state') in ('ok','partial')})
         if self.path.startswith('/api/report/'):
             name=self.path.removeprefix('/api/report/')
@@ -313,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
             if not target.is_file() or target.is_symlink():return self.send(404,{'error':'not_found'})
             from . import report_layouts
             return self.send(200,target.read_text(),'text/html; charset=utf-8' if target.suffix=='.html' else 'application/json; charset=utf-8' if target.suffix=='.json' else 'text/plain; charset=utf-8',policy=report_layouts.content_policy() if target.suffix=='.html' else None)
-        if self.path == '/api/health': return self.send(200, {'status': 'ok', 'version': '0.2.0', 'cloud_export_enabled': config.get()['summary']['provider']=='codex'})
+        if self.path == '/api/health': return self.send(200, {'status': 'ok', 'version': '0.2.1', 'cloud_export_enabled': config.get()['summary']['provider']=='codex'})
         return self.send(404, {'error': 'not_found'})
     def do_POST(self):
         if not self.valid_host() or self.headers.get('Origin') != self.server.origin or not secrets.compare_digest(self.headers.get('X-CSRF-Token', ''), self.server.csrf):

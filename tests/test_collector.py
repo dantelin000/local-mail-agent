@@ -225,12 +225,12 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(classify.call_count,1)
         with c.store() as db:self.assertEqual(db.execute("SELECT count(*) FROM queue WHERE read_state='marked_read'").fetchone()[0],2)
 
-    def completed_item(self,read_state='pending'):
+    def completed_item(self,read_state='pending',gate='review'):
         item=self.native_result(raw='Message-ID: <private-test@example.test>\nFrom: sender@example.test\nSubject: ordinary\n\nHello')['messages'][0]
         c.enqueue_messages([item])
         with c.store() as db:
             row=db.execute('SELECT dedupe_key,source_hash FROM queue').fetchone()
-            db.execute('INSERT INTO processed VALUES (?,?,?,?)',(row['dedupe_key'],'saved-result','review',m.now()))
+            db.execute('INSERT INTO processed VALUES (?,?,?,?)',(row['dedupe_key'],'saved-result',gate,m.now()))
             db.execute("UPDATE queue SET status='classified',result_id='saved-result',read_state=?",(read_state,))
         return item,tuple(row)
 
@@ -298,6 +298,12 @@ class CollectorTests(unittest.TestCase):
         with c.store() as db:
             self.assertEqual(db.execute('SELECT raw FROM queue').fetchone()[0],item['raw'].encode())
             db.execute("UPDATE queue SET read_state='already_read'")
+        self.assertEqual(c.purge_raw(),1)
+        with c.store() as db:self.assertIsNone(db.execute('SELECT raw FROM queue').fetchone()[0])
+
+    def test_local_only_raw_is_purged_although_it_stays_unread(self):
+        self.cfg['mark_read_on_success']=True;c.write_json(c.SETTINGS,self.cfg)
+        self.completed_item(read_state='not_ready',gate='local_only')
         self.assertEqual(c.purge_raw(),1)
         with c.store() as db:self.assertIsNone(db.execute('SELECT raw FROM queue').fetchone()[0])
 

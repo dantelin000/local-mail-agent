@@ -149,7 +149,10 @@ def _maintain_queue(reconcile=False):
         rows=c.execute("""SELECT identity,account,raw,source_hash FROM queue WHERE raw IS NOT NULL AND
           dedupe_key IN (SELECT dedupe_key FROM processed) AND
           (julianday(created)<julianday(?) OR status IN ('classified','duplicate')) AND
-          (read_state IN ('marked_read','already_read') OR (? AND status IN ('classified','duplicate')))""",(cutoff,not mark_read)).fetchall()
+          -- local_only results are deliberately never marked read, so no receipt will ever need their raw.
+          (read_state IN ('marked_read','already_read') OR (? AND status IN ('classified','duplicate')) OR
+           (status IN ('classified','duplicate') AND dedupe_key IN (SELECT dedupe_key FROM processed WHERE gate!='review')))""",
+          (cutoff,not mark_read)).fetchall()
         for row in rows:
             source_hash=row['source_hash'] or hashlib.sha256(row['raw']).hexdigest()[:24]
             account=c.execute('SELECT addresses FROM accounts WHERE account=?',(row['account'],)).fetchone()

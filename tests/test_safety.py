@@ -21,6 +21,24 @@ class SafetyTests(unittest.TestCase):
         self.assertNotIn('evil.test', safe)
         self.assertNotIn('steal()', safe)
 
+    def test_inline_tags_and_lookalike_characters_cannot_split_sensitive_text(self):
+        self.assertIn('839271', m.plain_html('<p>Code <span>83</span><span>9271</span></p>'))
+        self.assertIn('糖尿病', m.plain_html('<span>糖尿</span><b>病</b>'))
+        self.assertEqual(m.plain_html('<td>a</td><td>b</td>').split(), ['a', 'b'])
+        for text in ('ｐａｓｓｗｏｒｄ', 'pass\u00adword', '验\u200b证码'):
+            safe, marks = m.redact('Your ' + text + ' is here')
+            self.assertIn('认证相关内容', marks, text)
+
+    def test_html_alternative_is_checked_by_the_privacy_gate(self):
+        msg = email.message.EmailMessage()
+        msg['Subject'] = 'Hello';msg.set_content('See the HTML version.')
+        msg.add_alternative('<p>Your <span>diag</span>nosis results are ready</p>', subtype='html')
+        parsed = m.parse_eml(msg.as_bytes())
+        self.assertNotIn('nosis', parsed['body'])
+        self.assertIn('diagnosis', parsed['alternative'])
+        with patch.object(m,'local_api',return_value=self.response()):
+            self.assertEqual(m.classify(parsed)['gate'], 'local_only')
+
     def test_attachment_not_sent_to_model(self):
         msg = email.message.EmailMessage()
         msg['Subject'] = 'Hello';msg.set_content('ordinary body')

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Keep inline HTML tags from splitting text: `<span>83</span><span>9271</span>` and keywords split across tags are now seen whole by redaction and the local-only gate.
+- Check full-width letters and soft-hyphen/invisible-character variants of credential keywords (NFKC on the detection copy only).
+- Scan the HTML alternative of `multipart/alternative` mail for the local-only gate, not just the plain-text part.
+- Purge raw source of local-only results after classification even when mark-read is enabled; they are deliberately kept unread, so no receipt needs it.
+
 ## 0.2.0
 
 - Preserve the revised privacy fixes: raw-retention safeguards, expanded private-context blocking, credential fingerprints and terminal delivery deduplication.
